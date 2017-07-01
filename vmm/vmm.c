@@ -77,7 +77,7 @@ int fifo(int8_t** page_table, int num_pages, int prev_page, int fifo_frm, int nu
 int second_chance(int8_t** page_table, int num_pages, int prev_page, int fifo_frm, int num_frames, int clock) {
 	int page = 0;
 	int paginaVelha = fifo_frm;
-	
+
 	while(1){
 			page = page % num_pages;
 			paginaVelha = paginaVelha % num_frames;
@@ -98,35 +98,46 @@ int second_chance(int8_t** page_table, int num_pages, int prev_page, int fifo_fr
 	return -1;
 }
 
+/*Não tenho certeza se está certo
+Na pior das hipóses ele executa o fifo. */
+
 int nru(int8_t** page_table, int num_pages, int prev_page, int fifo_frm, int num_frames, int clock) {
-	
+		for(int page = 0; page < num_pages; page++){
+        	printf("%d %d %d %d %c %d\n",page_table[page][PT_FRAMEID],
+										page_table[page][PT_MAPPED],
+										page_table[page][PT_DIRTY],
+										page_table[page][PT_REFERENCE_BIT],
+										page_table[page][PT_REFERENCE_MODE],
+										page_table[page][PT_AGING_COUNTER]);
+    }
 	for(int page = 0; page < num_pages; page++){
-        if((page_table[page][PT_REFERENCE_BIT] == 0)&&(page_table[page][PT_REFERENCE_MODE] == 0)&&(page_table[page][PT_FRAMEID] == fifo_frm)){
+        if((page_table[page][PT_REFERENCE_BIT] == 0)&&(page_table[page][PT_REFERENCE_MODE] == 'r')&&page_table[page][PT_FRAMEID]>=0){
+        	printf("Entrei aqui! Página: %d\n",page);
         	return page;
 		}
     }
     for(int page = 0; page < num_pages; page++){
-        if((page_table[page][PT_REFERENCE_BIT] == 0)&&(page_table[page][PT_REFERENCE_MODE] == 1)&&(page_table[page][PT_FRAMEID] == fifo_frm)){
+        if((page_table[page][PT_REFERENCE_BIT] == 0)&&(page_table[page][PT_REFERENCE_MODE] = 'w')&&page_table[page][PT_FRAMEID]>=0){
+        	page_table[page][PT_REFERENCE_MODE] = 0;
+        	printf("Entrei aqui! Página: %d\n",page);
         	return page;
 		}
     }
     for(int page = 0; page < num_pages; page++){
-        if((page_table[page][PT_REFERENCE_BIT] == 1)&&(page_table[page][PT_REFERENCE_MODE] == 0)&&(page_table[page][PT_FRAMEID] == fifo_frm)){
+        if((page_table[page][PT_REFERENCE_BIT] == 1)&&(page_table[page][PT_REFERENCE_MODE] == 'r')&&page_table[page][PT_FRAMEID]>=0){
+        	printf("Entrei aqui! Página: %d\n",page);
         	return page;
 		}
     }
     for(int page = 0; page < num_pages; page++){
-        if((page_table[page][PT_REFERENCE_BIT] == 1)&&(page_table[page][PT_REFERENCE_MODE] == 1)&&(page_table[page][PT_FRAMEID] == fifo_frm)){
+        if((page_table[page][PT_REFERENCE_BIT] == 1)&&(page_table[page][PT_REFERENCE_MODE] == 'w')&&page_table[page][PT_FRAMEID]>=0){
+        	printf("Entrei aqui! Página: %d\n",page);
+        	page_table[page][PT_REFERENCE_BIT] = 1;
         	return page;
 		}
     }
 	
-	for(int page = 0; page < num_pages; page++){
-        	if(page_table[page][PT_FRAMEID] == fifo_frm){
-        		return page;
-        	}
-    }
-    return 0;
+    return -1;
 }
 
 int aging(int8_t** page_table, int num_pages, int prev_page,
