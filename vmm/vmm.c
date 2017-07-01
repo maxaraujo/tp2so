@@ -42,12 +42,17 @@ typedef struct {
 //
 // Adicione mais parâmetros caso ache necessário
 
+/* 
+### Dentro do fifo_frm vem a ordem de entrada. Ao comparar do PT_FRAMEID com o fifo_frm
+### é possível verificar qual é página mais velha na memória fisica, e assim retornar
+### essa página para o simulador. Ele faz o resto. A contagem e etc.
+*/
 int fifo(int8_t** page_table, int num_pages, int prev_page, int fifo_frm, int num_frames, int clock) {
 
         for(int page = 0; page < num_pages; page++){
         	//printf("%d %d\n",page_table[page][PT_FRAMEID],fifo_frm);
         	if(page_table[page][PT_FRAMEID] == fifo_frm){
-        		printf("Página %d retirada\n",page);
+        		//printf("Página %d retirada\n",page);
         		return page;
         	}
          }
@@ -63,7 +68,12 @@ int fifo(int8_t** page_table, int num_pages, int prev_page, int fifo_frm, int nu
 										page_table[page][PT_REFERENCE_MODE],
 										page_table[page][PT_AGING_COUNTER]);
     }*/
-
+/* 
+### Aqui foi preciso seguir a ordem do fifo também, porém só pode devolver a página se ele tiver com PT_REFERENCE_BIT = 0
+### Se ela for um, é dado mais uma chance pra ela e continuamos verificando as próximas.
+### O mod é pra que isso acontece até devolver uma página. 
+### esse página velha é para fazer o fifo circular. Até então só as páginas circulavam para encontrar qual era a mais velha.
+*/
 int second_chance(int8_t** page_table, int num_pages, int prev_page, int fifo_frm, int num_frames, int clock) {
 	int page = 0;
 	int paginaVelha = fifo_frm;
@@ -88,9 +98,35 @@ int second_chance(int8_t** page_table, int num_pages, int prev_page, int fifo_fr
 	return -1;
 }
 
-int nru(int8_t** page_table, int num_pages, int prev_page,
-        int fifo_frm, int num_frames, int clock) {
-  return -1;
+int nru(int8_t** page_table, int num_pages, int prev_page, int fifo_frm, int num_frames, int clock) {
+	
+	for(int page = 0; page < num_pages; page++){
+        if((page_table[page][PT_REFERENCE_BIT] == 0)&&(page_table[page][PT_REFERENCE_MODE] == 0)&&(page_table[page][PT_FRAMEID] == fifo_frm)){
+        	return page;
+		}
+    }
+    for(int page = 0; page < num_pages; page++){
+        if((page_table[page][PT_REFERENCE_BIT] == 0)&&(page_table[page][PT_REFERENCE_MODE] == 1)&&(page_table[page][PT_FRAMEID] == fifo_frm)){
+        	return page;
+		}
+    }
+    for(int page = 0; page < num_pages; page++){
+        if((page_table[page][PT_REFERENCE_BIT] == 1)&&(page_table[page][PT_REFERENCE_MODE] == 0)&&(page_table[page][PT_FRAMEID] == fifo_frm)){
+        	return page;
+		}
+    }
+    for(int page = 0; page < num_pages; page++){
+        if((page_table[page][PT_REFERENCE_BIT] == 1)&&(page_table[page][PT_REFERENCE_MODE] == 1)&&(page_table[page][PT_FRAMEID] == fifo_frm)){
+        	return page;
+		}
+    }
+	
+	for(int page = 0; page < num_pages; page++){
+        	if(page_table[page][PT_FRAMEID] == fifo_frm){
+        		return page;
+        	}
+    }
+    return 0;
 }
 
 int aging(int8_t** page_table, int num_pages, int prev_page,
