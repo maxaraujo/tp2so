@@ -42,14 +42,50 @@ typedef struct {
 //
 // Adicione mais parâmetros caso ache necessário
 
-int fifo(int8_t** page_table, int num_pages, int prev_page,
-         int fifo_frm, int num_frames, int clock) {
+int fifo(int8_t** page_table, int num_pages, int prev_page, int fifo_frm, int num_frames, int clock) {
+
+        for(int page = 0; page < num_pages; page++){
+        	//printf("%d %d\n",page_table[page][PT_FRAMEID],fifo_frm);
+        	if(page_table[page][PT_FRAMEID] == fifo_frm){
+        		printf("Página %d retirada\n",page);
+        		return page;
+        	}
+         }
+         
   return -1;
 }
 
-int second_chance(int8_t** page_table, int num_pages, int prev_page,
-                  int fifo_frm, int num_frames, int clock) {
-  return -1;
+/*for(int page = 0; page < num_pages; page++){
+        	printf("%d %d %d %d %d %d\n",page_table[page][PT_FRAMEID],
+										page_table[page][PT_MAPPED],
+										page_table[page][PT_DIRTY],
+										page_table[page][PT_REFERENCE_BIT],
+										page_table[page][PT_REFERENCE_MODE],
+										page_table[page][PT_AGING_COUNTER]);
+    }*/
+
+int second_chance(int8_t** page_table, int num_pages, int prev_page, int fifo_frm, int num_frames, int clock) {
+	int page = 0;
+	int paginaVelha = fifo_frm;
+	
+	while(1){
+			page = page % num_pages;
+			paginaVelha = paginaVelha % num_frames;
+
+        	if(page_table[page][PT_FRAMEID] == paginaVelha){
+        		if(page_table[page][PT_REFERENCE_BIT] == 0){
+
+        			return page;
+		    	}else{
+		    	
+		    		page_table[page][PT_REFERENCE_BIT] = 0;
+		    		paginaVelha++;
+		    	}
+		    }
+        	page++;
+    }
+	
+	return -1;
 }
 
 int nru(int8_t** page_table, int num_pages, int prev_page,
