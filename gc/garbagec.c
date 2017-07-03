@@ -205,7 +205,7 @@ void libera(void *ptr) {
 	anterior -> next = metaData -> next;
 }
 
-void run(void **variables) {
+void run(void **variables, int** referencias) {
   // Vamos iniciar alocando todo o MEMSIZE. Vamos split e merges depois.
   // Vou iniciar o HEAP usando NULL, deixa o SO decidir. Podemos usar sbrk(0)
   // também para sugerir o local inicial.
@@ -248,9 +248,15 @@ void run(void **variables) {
         exit(1);
       }
       variables[opid] =  variables[memsize];
+      referencias[memsize]++;
     }else if (optype == 'f') {  // Free!
-      addr = variables[opid];
-      libera(addr);
+      if (referencias[opid] == 0) {
+        addr = variables[opid];
+        libera(addr);
+    }
+      else{
+        referencias[opid]--;
+      }    
     } else {
       printf("Erro na entrada");
       munmap(HEAP, MEMSIZE);
@@ -293,7 +299,13 @@ int main(int argc, char **argv) {
 
   for (int i = 0; i < nops; i++)
     variables[i] = NULL;
+  
+  int **referencias = (int **) malloc(nops * sizeof(int**));
+  assert(referencias != NULL);
+  
+  for (int i = 0; i < nops; i++)
+    referencias[i] = 0;
 
-  run(variables);
-  free(variables);
+  run(variables, referencias);
+  free(variables, referencias);
 }
