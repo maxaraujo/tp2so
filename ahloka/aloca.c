@@ -80,23 +80,6 @@ void *ff(size_t size) {
 	return NULL;
 }
 
-void encaixa(void *ptr) {
-	free_node_t *anterior = HEAP -> head;
-
-	free_node_t *metaData = (void*)ptr - sizeof(free_node_t);
-	
-	while(anterior -> next != metaData){
-		anterior = anterior -> next;
-		printf("To no while!\n");
-	}
-	if(HEAP -> lastAlloca == metaData){
-		HEAP -> lastAlloca = anterior;
-	}
-	
-	anterior -> free += metaData -> free + metaData -> size;
-	anterior -> next = metaData -> next;
-}
-
 void *bf(size_t size) {
 	free_node_t *aux = HEAP -> head;
 	free_node_t *fim = HEAP -> lastAlloca;
