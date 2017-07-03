@@ -240,7 +240,15 @@ void run(void **variables) {
         exit(1);
       }
       variables[opid] = addr;
-    } else if (optype == 'f') {  // Free!
+    }else if (optype == 'r') {  // Referencia!
+      addr = aloca(4);
+      if (addr == NULL) {
+        printf("mem full\n");
+        munmap(HEAP, MEMSIZE);
+        exit(1);
+      }
+      variables[opid] =  variables[memsize];
+    }else if (optype == 'f') {  // Free!
       addr = variables[opid];
       libera(addr);
     } else {
