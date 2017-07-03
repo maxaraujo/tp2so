@@ -11,6 +11,7 @@
 
 #include "aloca.h"
 
+
 // Strategia de alocação como variável global. Feio mas funciona dado o
 // esqueleto do TP.
 static char *STRATEGY = NULL;
@@ -26,6 +27,7 @@ void *alwaysGrow(size_t size) {
   assert(HEAP->lastAlloca != NULL);
   free_node_t *lastAlloca = HEAP->lastAlloca;
   printf("Ultimo free %lu\n", lastAlloca->free);
+   
   // Temos espaço para alocar + o espaço da lista?
   if (lastAlloca->free < sizeof(free_node_t) + size) {
     return NULL;
@@ -33,8 +35,8 @@ void *alwaysGrow(size_t size) {
   // Sim!
   // Novo nó logo após o último aloca.
   // Posicao da alocacao + tamanho alocado + tamanho do cabeçalho
-  free_node_t *newNode = (void*)lastAlloca + lastAlloca->size + \
-                         sizeof(free_node_t);
+  free_node_t *newNode = (void*)lastAlloca + lastAlloca->size + sizeof(free_node_t);
+  
   newNode->next = NULL;
   newNode->size = size;
   newNode->free = lastAlloca->free - sizeof(free_node_t) - size;
@@ -49,11 +51,73 @@ void *alwaysGrow(size_t size) {
 }
 
 void *ff(size_t size) {
-  return NULL;
+	free_node_t *aux = HEAP->head;
+	printf("mem: %lu\n", aux->free);
+	
+	while(aux != NULL) {
+		if(aux->free >= sizeof(free_node_t) + size)
+        {
+
+			free_node_t *newNode = (void*)aux + size + sizeof(free_node_t);
+			newNode->free = aux->free - sizeof(free_node_t) - size;
+			newNode->size = size;
+			newNode->next = aux->next;
+			aux->next = newNode;
+			
+			aux->free = 0;
+			
+			printf("mem: %lu\n", newNode->free);
+		
+			if(newNode -> next == NULL)
+				HEAP -> lastAlloca = newNode;
+				
+			return (void*)newNode + sizeof(free_node_t);
+		}else{
+			if(aux -> next == NULL)
+				HEAP -> lastAlloca = aux;
+			
+			aux = aux->next;
+		}
+
+	}
+	return NULL;
 }
 
+
 void *bf(size_t size) {
-  return NULL;
+	free_node_t *aux = HEAP->head;
+	free_node_t *best = aux;
+	size_t diferenca = size;
+	size_t melhor = size;
+	printf("mem: %lu\n", aux->free);
+	
+	while(aux != NULL) {
+		printf("To aqui!\n");
+		if(aux->free >= sizeof(free_node_t) + size)
+        {
+			diferenca = aux -> free - (sizeof(free_node_t) + size);
+			if(diferenca < melhor){
+				melhor = diferenca;
+				best = aux;
+			}
+		}
+		aux = aux->next;
+	}
+	
+	free_node_t *newNode = (void*)best + size + sizeof(free_node_t);
+	newNode->free = best->free - sizeof(free_node_t) - size;
+	newNode->size = size;
+	newNode->next = best->next;
+	best->next = newNode;
+			
+	best->free = 0;
+			
+	printf("mem: %lu\n", newNode->free);
+		
+	if(newNode -> next == NULL)
+		HEAP -> lastAlloca = newNode;
+				
+	return (void*)newNode + sizeof(free_node_t);
 }
 
 void *wf(size_t size) {
@@ -61,10 +125,13 @@ void *wf(size_t size) {
 }
 
 void *nf(size_t size) {
+
   return NULL;
 }
 
+
 void *aloca(size_t size) {
+
   if (strcmp(STRATEGY, "ag") == 0) {
     return alwaysGrow(size);
   }
@@ -89,7 +156,20 @@ void *aloca(size_t size) {
 }
 
 void libera(void *ptr) {
-  free_node_t *metaData = (void*)ptr - sizeof(free_node_t);
+	free_node_t *anterior = HEAP -> head;
+
+	free_node_t *metaData = (void*)ptr - sizeof(free_node_t);
+	
+	while(anterior -> next != metaData){
+		anterior = anterior -> next;
+		printf("To no while!\n");
+	}
+	if(HEAP -> lastAlloca == metaData){
+		HEAP -> lastAlloca = anterior;
+	}
+	
+	anterior -> free += metaData -> free + metaData -> size;
+	anterior -> next = metaData -> next;
 }
 
 void run(void **variables) {
