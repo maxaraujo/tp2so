@@ -120,7 +120,41 @@ void *bf(size_t size) {
 }
 
 void *wf(size_t size) {
-  return NULL;
+	free_node_t *aux = HEAP -> head;
+	free_node_t *fim = HEAP -> lastAlloca;
+	free_node_t *best = HEAP -> head;
+	int primeiro = 0;
+	size_t dif = size;
+	size_t melhor;
+
+	while(aux != NULL) {
+
+		if(aux->free >= sizeof(free_node_t) + size)
+        {  
+            if(primeiro == 0){
+                melhor = aux -> free - sizeof(free_node_t) - size;
+                best = aux;
+                primeiro = 1;
+            }else{
+                dif = aux -> free - sizeof(free_node_t) - size;
+                if(dif > melhor){
+                    melhor = dif;
+                    best = aux;
+                }
+            }            
+         			
+		}
+		aux = aux->next;
+	}
+	          
+    free_node_t *newNode = (void*)best + size + sizeof(free_node_t);
+    newNode->free = best->free - sizeof(free_node_t) - size;
+    newNode->size = size;
+    newNode->next = best->next;
+    best->next = newNode;
+	
+    best->free = 0;
+	return (void*)newNode + sizeof(free_node_t);
 }
 
 void *nf(size_t size) {
