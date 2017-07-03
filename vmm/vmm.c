@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <unistd.h>
 
 // Campos da tabela de páginas
 #define PT_FIELDS 6           // 4 campos na tabela
@@ -135,7 +136,22 @@ int nru(int8_t** page_table, int num_pages, int prev_page, int fifo_frm, int num
 
 int aging(int8_t** page_table, int num_pages, int prev_page,
           int fifo_frm, int num_frames, int clock) {
-  return -1;
+  unsigned char bitAging = 0;
+  int menorPage = -1;
+  unsigned char menorBitAging = 255;
+  	for(int page = 0; page < num_pages; page++){
+      if (page_table[page][PT_MAPPED] == 1){
+        bitAging = (unsigned char) (page_table[page][PT_AGING_COUNTER]);
+        //printf("page [%d] - %d\n",page, bitAging);
+        if (bitAging < menorBitAging){
+          menorBitAging = bitAging;
+          menorPage = page;
+        }
+      }      
+    }  
+  //sleep(2);
+  //printf("Page retornada = %d\n", menorPage);
+  return menorPage;
 }
 
 int random_page(int8_t** page_table, int num_pages, int prev_page,
@@ -174,6 +190,12 @@ int simulate(int8_t **page_table, int num_pages, int *prev_page, int *fifo_frm,
 
   if (page_table[virt_addr][PT_MAPPED] == 1) {
     page_table[virt_addr][PT_REFERENCE_BIT] = 1;
+    //Acrescentando o bit de referencia para o aging
+    unsigned int bitAging = 0;
+    bitAging = (unsigned int) ( (int) (page_table[virt_addr][PT_AGING_COUNTER] /2) + 128);
+    page_table[virt_addr][PT_AGING_COUNTER]  = bitAging;
+      //printf("page-table[%d][%d] = %d \n", virt_addr, PT_AGING_COUNTER, bitAging );
+    //sleep(3);
     return 0; // Not Page Fault!
   }
 
@@ -186,8 +208,12 @@ int simulate(int8_t **page_table, int num_pages, int *prev_page, int *fifo_frm,
     *num_free_frames = *num_free_frames - 1;
   } else { // Precisamos liberar a memória!
     assert(*num_free_frames == 0);
-    int to_free = evict(page_table, num_pages, *prev_page, *fifo_frm,
+    int to_free = 0;
+    //printf("to_free: %d\n",to_free);
+    //sleep(100);
+    to_free = evict(page_table, num_pages, *prev_page, *fifo_frm,
                         num_frames, clock);
+    
     assert(to_free >= 0);
     assert(to_free < num_pages);
     assert(page_table[to_free][PT_MAPPED] != 0);
