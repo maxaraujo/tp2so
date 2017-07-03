@@ -52,8 +52,7 @@ void *alwaysGrow(size_t size) {
 
 void *ff(size_t size) {
 	free_node_t *aux = HEAP->head;
-	printf("mem: %lu\n", aux->free);
-	
+
 	while(aux != NULL) {
 		if(aux->free >= sizeof(free_node_t) + size)
         {
@@ -65,8 +64,6 @@ void *ff(size_t size) {
 			aux->next = newNode;
 			
 			aux->free = 0;
-			
-			printf("mem: %lu\n", newNode->free);
 		
 			if(newNode -> next == NULL)
 				HEAP -> lastAlloca = newNode;
@@ -83,41 +80,60 @@ void *ff(size_t size) {
 	return NULL;
 }
 
+void encaixa(void *ptr) {
+	free_node_t *anterior = HEAP -> head;
+
+	free_node_t *metaData = (void*)ptr - sizeof(free_node_t);
+	
+	while(anterior -> next != metaData){
+		anterior = anterior -> next;
+		printf("To no while!\n");
+	}
+	if(HEAP -> lastAlloca == metaData){
+		HEAP -> lastAlloca = anterior;
+	}
+	
+	anterior -> free += metaData -> free + metaData -> size;
+	anterior -> next = metaData -> next;
+}
 
 void *bf(size_t size) {
-	free_node_t *aux = HEAP->head;
-	free_node_t *best = aux;
-	size_t diferenca = size;
-	size_t melhor = size;
-	printf("mem: %lu\n", aux->free);
-	
+	free_node_t *aux = HEAP -> head;
+	free_node_t *fim = HEAP -> lastAlloca;
+	free_node_t *best = HEAP -> head;
+	int primeiro = 0;
+	size_t dif = size;
+	size_t melhor;
+
 	while(aux != NULL) {
-		printf("To aqui!\n");
+
 		if(aux->free >= sizeof(free_node_t) + size)
-        {
-			diferenca = aux -> free - (sizeof(free_node_t) + size);
-			if(diferenca < melhor){
-				melhor = diferenca;
-				best = aux;
-			}
+        {  
+            if(primeiro == 0){
+                melhor = aux -> free - sizeof(free_node_t) - size;
+                best = aux;
+                primeiro = 1;
+            }else{
+                dif = aux -> free - sizeof(free_node_t) - size;
+                if(dif < melhor){
+                    melhor = dif;
+                    best = aux;
+                }
+            }            
+         			
 		}
 		aux = aux->next;
 	}
-	
-	free_node_t *newNode = (void*)best + size + sizeof(free_node_t);
-	newNode->free = best->free - sizeof(free_node_t) - size;
-	newNode->size = size;
-	newNode->next = best->next;
-	best->next = newNode;
+	          
+    free_node_t *newNode = (void*)best + size + sizeof(free_node_t);
+    newNode->free = best->free - sizeof(free_node_t) - size;
+    newNode->size = size;
+    newNode->next = best->next;
+    best->next = newNode;
 			
-	best->free = 0;
-			
-	printf("mem: %lu\n", newNode->free);
-		
-	if(newNode -> next == NULL)
-		HEAP -> lastAlloca = newNode;
-				
+    best->free = 0;
 	return (void*)newNode + sizeof(free_node_t);
+
 }
 
 void *wf(size_t size) {
