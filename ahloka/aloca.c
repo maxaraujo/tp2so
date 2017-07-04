@@ -26,7 +26,7 @@ free_list_t *HEAP = NULL;
 void *alwaysGrow(size_t size) {
   assert(HEAP->lastAlloca != NULL);
   free_node_t *lastAlloca = HEAP->lastAlloca;
-  printf("Ultimo free %lu\n", lastAlloca->free);
+  //printf("Ultimo free %lu\n", lastAlloca->free);
    
   // Temos espaço para alocar + o espaço da lista?
   if (lastAlloca->free < sizeof(free_node_t) + size) {
@@ -159,8 +159,38 @@ void *wf(size_t size) {
 
 void *nf(size_t size) {
 
-  return NULL;
+free_node_t *aux = HEAP->lastAlloca;
+        free_node_t *newNode;
+ 
+        while(aux != NULL) {
+                if(aux->free >= sizeof(free_node_t) + size)
+                {
+ 
+                        newNode = (void*)aux + size + sizeof(free_node_t);
+                        newNode->free = aux->free - sizeof(free_node_t) - size;
+                        newNode->size = size;
+                        newNode->next = aux->next;
+                        aux->next = newNode;
+ 
+                        aux->free = 0;
+ 
+                        printf("mem: %lu\n", newNode->free);
+ 
+                        if(newNode->next == NULL)
+                                HEAP->lastAlloca = newNode;
+ 
+                        return (void*)newNode + sizeof(free_node_t);
+                }else{
+                        if(aux->next == NULL)
+                                HEAP->lastAlloca = aux;
+ 
+                        aux = aux->next;
+                }
+ 
+        }
+        return (void*)newNode + sizeof(free_node_t);
 }
+
 
 
 void *aloca(size_t size) {
@@ -195,7 +225,7 @@ void libera(void *ptr) {
 	
 	while(anterior -> next != metaData){
 		anterior = anterior -> next;
-		printf("To no while!\n");
+		//printf("To no while!\n");
 	}
 	if(HEAP -> lastAlloca == metaData){
 		HEAP -> lastAlloca = anterior;
@@ -204,6 +234,21 @@ void libera(void *ptr) {
 	anterior -> free += metaData -> free + metaData -> size;
 	anterior -> next = metaData -> next;
 }
+
+void calculaFrag(){
+        double soma_total = 0;
+        free_node_t *aux = HEAP->head;
+        double maior_free = aux->free;
+
+        while(aux != NULL) {
+                soma_total += aux->free;
+                if(aux->free > maior_free)
+                        maior_free = aux->free;
+                aux = aux->next;
+        }
+        printf("%lf\n", 1 - (maior_free / soma_total));
+}
+
 
 void run(void **variables) {
   // Vamos iniciar alocando todo o MEMSIZE. Vamos split e merges depois.
@@ -231,11 +276,11 @@ void run(void **variables) {
     getchar();
     scanf("%c", &optype);
     getchar();
-    printf("Alocando %d; %d; %c\n", opid, memsize, optype);
+    //printf("Alocando %d; %d; %c\n", opid, memsize, optype);
     if (optype == 'a') {         // Aloca!
       addr = aloca(memsize);
       if (addr == NULL) {
-        printf("mem full\n");
+        //printf("mem full\n");
         munmap(HEAP, MEMSIZE);
         exit(1);
       }
@@ -249,19 +294,21 @@ void run(void **variables) {
       exit(1);
     }
   }
+  
+  calculaFrag();
   munmap(HEAP, MEMSIZE);
 }
 
 int main(int argc, char **argv) {
   if (argc < 2) {
-    printf("Usage %s <algorithm>\n", argv[0]);
+    //printf("Usage %s <algorithm>\n", argv[0]);
     exit(1);
   }
   STRATEGY = argv[1];
 
   int nops;
   scanf("%d\n", &nops);
-  printf("%d\n", nops);
+  //printf("%d\n", nops);
 
   char *algorithms[] = {"ff", "bf", "wf", "nf", "ag"};
   int n_alg = 5;

@@ -9,7 +9,7 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-#include "aloca.h"
+#include "garbagec.h"
 
 
 // Strategia de alocação como variável global. Feio mas funciona dado o
@@ -26,7 +26,7 @@ free_list_t *HEAP = NULL;
 void *alwaysGrow(size_t size) {
   assert(HEAP->lastAlloca != NULL);
   free_node_t *lastAlloca = HEAP->lastAlloca;
-  printf("Ultimo free %lu\n", lastAlloca->free);
+  //printf("Ultimo free %lu\n", lastAlloca->free);
    
   // Temos espaço para alocar + o espaço da lista?
   if (lastAlloca->free < sizeof(free_node_t) + size) {
@@ -159,7 +159,36 @@ void *wf(size_t size) {
 
 void *nf(size_t size) {
 
-  return NULL;
+free_node_t *aux = HEAP->lastAlloca;
+        free_node_t *newNode;
+ 
+        while(aux != NULL) {
+                if(aux->free >= sizeof(free_node_t) + size)
+                {
+ 
+                        newNode = (void*)aux + size + sizeof(free_node_t);
+                        newNode->free = aux->free - sizeof(free_node_t) - size;
+                        newNode->size = size;
+                        newNode->next = aux->next;
+                        aux->next = newNode;
+ 
+                        aux->free = 0;
+ 
+                        printf("mem: %lu\n", newNode->free);
+ 
+                        if(newNode->next == NULL)
+                                HEAP->lastAlloca = newNode;
+ 
+                        return (void*)newNode + sizeof(free_node_t);
+                }else{
+                        if(aux->next == NULL)
+                                HEAP->lastAlloca = aux;
+ 
+                        aux = aux->next;
+                }
+ 
+        }
+        return (void*)newNode + sizeof(free_node_t);
 }
 
 
@@ -195,7 +224,7 @@ void libera(void *ptr) {
 	
 	while(anterior -> next != metaData){
 		anterior = anterior -> next;
-		printf("To no while!\n");
+		//printf("To no while!\n");
 	}
 	if(HEAP -> lastAlloca == metaData){
 		HEAP -> lastAlloca = anterior;
@@ -205,7 +234,29 @@ void libera(void *ptr) {
 	anterior -> next = metaData -> next;
 }
 
-void run(void **variables, int** referencias) {
+void referencia(size_t pos){
+        int i = 0;
+        free_node_t *aux = HEAP->head;
+        while(aux != NULL) {
+                if(i = pos)
+                        aux->size += 4;
+                i++;
+                aux = aux->next;
+        }
+}
+
+void desReferencia(size_t pos){
+        int i = 0;
+        free_node_t *aux = HEAP->head;
+        while(aux != NULL) {
+                if(i = pos)
+                        aux->size -= 4;
+                i++;
+                aux = aux->next;
+        }
+}
+
+void run(void **variables, int* referencias, void ** variables2) {
   // Vamos iniciar alocando todo o MEMSIZE. Vamos split e merges depois.
   // Vou iniciar o HEAP usando NULL, deixa o SO decidir. Podemos usar sbrk(0)
   // também para sugerir o local inicial.
@@ -231,31 +282,41 @@ void run(void **variables, int** referencias) {
     getchar();
     scanf("%c", &optype);
     getchar();
-    printf("Alocando %d; %d; %c\n", opid, memsize, optype);
+    //printf("Alocando %d; %d; %c\n", opid, memsize, optype);
     if (optype == 'a') {         // Aloca!
       addr = aloca(memsize);
       if (addr == NULL) {
-        printf("mem full\n");
+        //printf("mem full\n");
         munmap(HEAP, MEMSIZE);
         exit(1);
       }
       variables[opid] = addr;
+      referencias[opid]++;
     }else if (optype == 'r') {  // Referencia!
-      addr = aloca(4);
+      referencia(memsize);      
+      //addr = aloca(4);
       if (addr == NULL) {
-        printf("mem full\n");
+        //printf("mem full\n");
         munmap(HEAP, MEMSIZE);
         exit(1);
       }
       variables[opid] =  variables[memsize];
+      //variables2[opid] =  addr;
       referencias[memsize]++;
     }else if (optype == 'f') {  // Free!
-      if (referencias[opid] == 0) {
-        addr = variables[opid];
+      if (referencias[opid] == 0) {        
+         //printf("referencias [%d] - %d \n",  referencias[opid]);
+        addr = variables[opid];        
         libera(addr);
+        desReferencia(opid);
+      //  if (variables2[opid] != NULL) {
+        //  addr =  variables2[opid];
+          //libera(addr);
+        //}
     }
       else{
         referencias[opid]--;
+        // printf("referencias [%d] - %d \n",  referencias[opid]);
       }    
     } else {
       printf("Erro na entrada");
@@ -263,19 +324,32 @@ void run(void **variables, int** referencias) {
       exit(1);
     }
   }
+  
+  
+  //soma
+  
+  int soma_total = 0;
+        free_node_t *aux = HEAP->head;
+        while(aux != NULL) {
+                soma_total += aux->size;
+                aux = aux->next;
+        }
+  
+  printf("%d\n", soma_total);
+  
   munmap(HEAP, MEMSIZE);
 }
 
 int main(int argc, char **argv) {
   if (argc < 2) {
-    printf("Usage %s <algorithm>\n", argv[0]);
+    //printf("Usage %s <algorithm>\n", argv[0]);
     exit(1);
   }
   STRATEGY = argv[1];
 
   int nops;
   scanf("%d\n", &nops);
-  printf("%d\n", nops);
+  //printf("%d\n", nops);
 
   char *algorithms[] = {"ff", "bf", "wf", "nf", "ag"};
   int n_alg = 5;
@@ -296,16 +370,22 @@ int main(int argc, char **argv) {
   // É lido ao executarmos uma operação 'f'
   void **variables = (void **) malloc(nops * sizeof(void**));
   assert(variables != NULL);
+  
+   void **variables2 = (void **) malloc(nops * sizeof(void**));
+  assert(variables2 != NULL);
 
   for (int i = 0; i < nops; i++)
     variables[i] = NULL;
   
-  int **referencias = (int **) malloc(nops * sizeof(int**));
+    for (int i = 0; i < nops; i++)
+    variables2[i] = NULL;
+  
+  int *referencias = (int *) malloc(nops * sizeof(int*));
   assert(referencias != NULL);
   
   for (int i = 0; i < nops; i++)
     referencias[i] = 0;
-
-  run(variables, referencias);
-  free(variables, referencias);
+  
+  run(variables, referencias, variables2);
+  //free(variables, referencias, variables2);
 }
