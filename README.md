@@ -1,4 +1,4 @@
-# tp2so
+# Trabalho Prático de Sistemas Operacionais
 
 Esqueleto de um simulador de memória virtual.<br/>
 Feito para a disciplina DCC065 - Sistemas Operacionais (UFMG)<br/>
