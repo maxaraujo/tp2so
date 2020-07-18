@@ -8,5 +8,5 @@ Feito para a disciplina DCC065 - Sistemas Operacionais (UFMG)
    </blockquote>
   </li>
   <li>Um simulador de Garbage Colector</li>
-  <li>Um simulador de Máquina Virtual</li>
+  <li>Esqueleto de um código de alocação de memória (novo maloc)</li>
 </ul>
