@@ -1,4 +1,3 @@
-// Esqueleto de um código de alocação de memória (novo maloc)
 // Feito para a disciplina DCC065 - Sistemas Operacionais (UFMG)
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
